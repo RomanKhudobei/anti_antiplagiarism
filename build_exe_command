@@ -1,0 +1,1 @@
+pyinstaller --add-data "E:\Projects\antiplagiarism\comparables\source;source" --icon "icon.ico" anti_antiplagiarism.py --onefile --noconsole
