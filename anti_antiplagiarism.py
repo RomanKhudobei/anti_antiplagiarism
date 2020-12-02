@@ -90,16 +90,16 @@ def change_file_settings(target):
 
 
 def make_unique(target, percentage):
-    total_words = get_total_words(target)
-    words_left = (percentage / 100) * total_words
+    # total_words = get_total_words(target)
+    # words_left = (percentage / 100) * total_words
 
     tree = ET.parse(os.path.join(target, 'word/document.xml'), parser=ET.XMLParser(remove_blank_text=True))
     root = tree.getroot()
 
     for origin_run in root.iter(tag=f"{{{root.nsmap.get('w')}}}r"):
 
-        if words_left <= 0:
-            break
+        # if words_left <= 0:
+        #     break
 
         text = origin_run.find(f"{{{origin_run.nsmap.get('w')}}}t")
 
@@ -123,6 +123,25 @@ def make_unique(target, percentage):
         run_properties = get_run_properties(origin_run)    # <w:rPr> tag
 
         for index, word in enumerate(re.split(r'(\s+)', text)):
+
+            space_probability = random.randint(0, 100)
+
+            if space_probability > percentage:
+                run = ET.Element(f"{{{origin_run.nsmap.get('w')}}}r", nsmap={'w': origin_run.nsmap.get('w')})
+
+                if revision_id is not None:
+                    run.set(f"{{{origin_run.nsmap.get('w')}}}rsidRPr", revision_id)
+
+                if run_properties is not None:
+                    run.append(copy.deepcopy(run_properties))
+
+                text = ET.Element(f"{{{origin_run.nsmap.get('w')}}}t")
+                text.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+                text.text = word
+
+                run.append(text)
+                splitted_elements.append(run)
+                continue
 
             is_first_word = (index == 0)
 
@@ -224,19 +243,19 @@ def make_unique(target, percentage):
             origin_run.addnext(e)
 
         origin_run.getparent().remove(origin_run)
-        words_left -= words_count
+        # words_left -= words_count
 
     tree.write(os.path.join(target, 'word/document.xml'), xml_declaration=True, encoding='utf-8', standalone=True)
 
 
-def get_total_words(target):
-    tree = ET.parse(os.path.join(target, 'docProps/app.xml'), parser=ET.XMLParser(encoding='utf-8', remove_blank_text=True))
-    root = tree.getroot()
+# def get_total_words(target):
+#     tree = ET.parse(os.path.join(target, 'docProps/app.xml'), parser=ET.XMLParser(encoding='utf-8', remove_blank_text=True))
+#     root = tree.getroot()
 
-    total_words = root.find(f'{{{root.nsmap.get(None)}}}Words')
+#     total_words = root.find(f'{{{root.nsmap.get(None)}}}Words')
 
-    total_words = getattr(total_words, 'text', None)
-    return total_words and int(total_words)
+#     total_words = getattr(total_words, 'text', None)
+#     return total_words and int(total_words)
 
 
 def get_revision_id(run):
@@ -267,7 +286,7 @@ def main():
 
     percentage = pmb.prompt(
         title='Задання початкових параметрів',
-        text='Бажаний процент унікальності: (Від 0 до 100 без знаку "%")'
+        text='Вкажіть ймовірність вставки пробілу в слово: (Від 0 до 100 без знаку "%")'
     )
 
     try:
